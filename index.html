@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>미학적 민감성 테스트(AReA) </title>
+<title>미학적 민감성 테스트(AReA)</title>
 <style>
 body{font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;margin:0;background:#f6f7fb;color:#0f172a;padding:20px;}
 h1{font-size:20px;margin-bottom:20px;}
@@ -23,6 +23,8 @@ button{background:#334155;color:white;border:0;padding:8px 10px;border-radius:8p
 <button id="submitSurvey" type="button">제출 및 점수보기</button>
 
 <div id="resultsArea" style="display:none;">
+  <div class="resultRow"><strong>각 항목 점수:</strong><span id="itemScores">—</span></div>
+  <div class="resultRow"><strong>총합:</strong><span id="totalScore">—</span></div>
   <div class="resultRow"><strong>전체 평균:</strong><span id="meanScore">—</span></div>
   <div class="resultRow"><strong>AA(미학적 가치판단)평균:</strong><span id="aaScore">—</span></div>
   <div class="resultRow"><strong>IAE(강렬한 미학적 경험)평균:</strong><span id="iaeScore">—</span></div>
@@ -34,7 +36,7 @@ const surveyForm = document.getElementById('surveyForm');
 const resultsArea = document.getElementById('resultsArea');
 const submitSurvey = document.getElementById('submitSurvey');
 
-// 14개 문항 
+// 설문 항목 정의
 const items = [
 {id:1,text:'나는 박물관을 방문하거나 음악/무용 공연을 보러 간다.',subscale:'AA',reverse:false},
 {id:2,text:'나는 예술 작품을 볼 때 아름다움을 알아차린다.',subscale:'AA',reverse:false},
@@ -55,8 +57,14 @@ const items = [
 // 설문 렌더링
 function renderSurvey(){
   const min=1,max=5;
-  const scaleLabels = {1:'전혀 그렇지 않다',2:'약간 그렇다',3:'보통이다',4:'그렇다',5:'매우 그렇다'};
-  
+
+  // 스케일 안내 맨 위
+  const scaleInfo = document.createElement('div');
+  scaleInfo.style.marginBottom = '12px';
+  scaleInfo.style.fontWeight = 'bold';
+  scaleInfo.textContent = '응답 스케일: 1 = 전혀 그렇지 않다 / 2 = 약간 그렇다 / 3 = 보통이다 / 4 = 그렇다 / 5 = 매우 그렇다';
+  surveyForm.appendChild(scaleInfo);
+
   items.forEach((it,i)=>{
     const div = document.createElement('div');
     const label = document.createElement('label');
@@ -79,7 +87,7 @@ function renderSurvey(){
       inp.value=v; 
       inp.required=true;
       r.appendChild(inp); 
-      r.appendChild(document.createTextNode(v + ' = ' + scaleLabels[v]));
+      r.appendChild(document.createTextNode(v)); // 숫자만 표시
       row.appendChild(r);
     }
     div.appendChild(label); 
