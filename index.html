@@ -23,8 +23,6 @@ button{background:#334155;color:white;border:0;padding:8px 10px;border-radius:8p
 <button id="submitSurvey" type="button">제출 및 점수보기</button>
 
 <div id="resultsArea" style="display:none;">
-  <div class="resultRow"><strong>각 항목 점수:</strong><span id="itemScores">—</span></div>
-  <div class="resultRow"><strong>총합:</strong><span id="totalScore">—</span></div>
   <div class="resultRow"><strong>전체 평균:</strong><span id="meanScore">—</span></div>
   <div class="resultRow"><strong>AA(미학적 가치판단)평균:</strong><span id="aaScore">—</span></div>
   <div class="resultRow"><strong>IAE(강렬한 미학적 경험)평균:</strong><span id="iaeScore">—</span></div>
@@ -36,7 +34,7 @@ const surveyForm = document.getElementById('surveyForm');
 const resultsArea = document.getElementById('resultsArea');
 const submitSurvey = document.getElementById('submitSurvey');
 
-// 14개 예시 항목
+// 14개 문항 
 const items = [
 {id:1,text:'나는 박물관을 방문하거나 음악/무용 공연을 보러 간다.',subscale:'AA',reverse:false},
 {id:2,text:'나는 예술 작품을 볼 때 아름다움을 알아차린다.',subscale:'AA',reverse:false},
@@ -54,42 +52,81 @@ const items = [
 {id:14,text:'나는 예술 작품을 볼 때 기쁨, 평온함, 또는 그 밖의 긍정적 감정을 경험한다.',subscale:'IAE',reverse:false}
 ];
 
+// 설문 렌더링
 function renderSurvey(){
   const min=1,max=5;
+  const scaleLabels = {1:'전혀 그렇지 않다',2:'약간 그렇다',3:'보통이다',4:'그렇다',5:'매우 그렇다'};
+  
   items.forEach((it,i)=>{
     const div = document.createElement('div');
     const label = document.createElement('label');
     label.textContent = (i+1)+'. '+it.text;
     label.style.display='block';
-    const row = document.createElement('div'); row.style.display='flex'; row.style.gap='10px'; row.style.marginTop='4px';
+    
+    const row = document.createElement('div'); 
+    row.style.display='flex'; 
+    row.style.gap='10px'; 
+    row.style.marginTop='4px';
+    
     for(let v=min; v<=max; v++){
-      const r = document.createElement('label'); r.style.display='inline-flex'; r.style.alignItems='center'; r.style.gap='10px';
-      const inp = document.createElement('input'); inp.type='radio'; inp.name='q'+i; inp.value=v; inp.required=true;
-      r.appendChild(inp); r.appendChild(document.createTextNode(v));
+      const r = document.createElement('label'); 
+      r.style.display='inline-flex'; 
+      r.style.alignItems='center'; 
+      r.style.gap='4px';
+      const inp = document.createElement('input'); 
+      inp.type='radio'; 
+      inp.name='q'+i; 
+      inp.value=v; 
+      inp.required=true;
+      r.appendChild(inp); 
+      r.appendChild(document.createTextNode(v + ' = ' + scaleLabels[v]));
       row.appendChild(r);
     }
-    div.appendChild(label); div.appendChild(row);
+    div.appendChild(label); 
+    div.appendChild(row);
     surveyForm.appendChild(div);
   });
 }
 
+// 점수 해석
+function scoreLabel(value){
+  const labels = {
+    1:'미학적 민감도 낮음',
+    2:'미학적 민감도 보통 이하',
+    3:'미학적 민감도 보통',
+    4:'미학적 민감도 높음',
+    5:'미학적 민감도 매우 높음'
+  };
+  return labels[Math.round(value)] || '—';
+}
+
+// 점수 계산
 function computeScores(resp){
   const min=1,max=5;
   const adjusted = resp.map((r,i)=>items[i].reverse ? (max+min)-r : r);
-  document.getElementById('itemScores').textContent = adjusted.join(', ');
+  document.getElementById('itemScores').textContent = adjusted.map(v=>v + ' ('+scoreLabel(v)+')').join(', ');
+  
   const sum = adjusted.reduce((a,b)=>a+b,0);
+  const mean = sum/adjusted.length;
+  
   document.getElementById('totalScore').textContent = sum;
-  document.getElementById('meanScore').textContent = (sum/adjusted.length).toFixed(2);
+  document.getElementById('meanScore').textContent = mean.toFixed(2) + ' (' + scoreLabel(mean) + ')';
 
   const groups={AA:[],IAE:[],CB:[]};
   items.forEach((it,i)=>{ if(groups[it.subscale]) groups[it.subscale].push(adjusted[i]); });
-  document.getElementById('aaScore').textContent = groups.AA.length ? (groups.AA.reduce((a,b)=>a+b,0)/groups.AA.length).toFixed(2) : '—';
-  document.getElementById('iaeScore').textContent = groups.IAE.length ? (groups.IAE.reduce((a,b)=>a+b,0)/groups.IAE.length).toFixed(2) : '—';
-  document.getElementById('cbScore').textContent = groups.CB.length ? (groups.CB.reduce((a,b)=>a+b,0)/groups.CB.length).toFixed(2) : '—';
+
+  const aaMean = groups.AA.length ? (groups.AA.reduce((a,b)=>a+b,0)/groups.AA.length) : 0;
+  const iaeMean = groups.IAE.length ? (groups.IAE.reduce((a,b)=>a+b,0)/groups.IAE.length) : 0;
+  const cbMean = groups.CB.length ? (groups.CB.reduce((a,b)=>a+b,0)/groups.CB.length) : 0;
+
+  document.getElementById('aaScore').textContent = groups.AA.length ? aaMean.toFixed(2)+' ('+scoreLabel(aaMean)+')' : '—';
+  document.getElementById('iaeScore').textContent = groups.IAE.length ? iaeMean.toFixed(2)+' ('+scoreLabel(iaeMean)+')' : '—';
+  document.getElementById('cbScore').textContent = groups.CB.length ? cbMean.toFixed(2)+' ('+scoreLabel(cbMean)+')' : '—';
 
   resultsArea.style.display='block';
 }
 
+// 제출 버튼
 submitSurvey.addEventListener('click', ()=>{
   const formData = new FormData(surveyForm);
   const responses = [];
@@ -112,3 +149,9 @@ submitSurvey.addEventListener('click', ()=>{
 
   computeScores(responses);
 });
+
+renderSurvey();
+</script>
+
+</body>
+</html>
